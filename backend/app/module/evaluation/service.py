@@ -131,8 +131,11 @@ class LexicalChunkRetriever:
             )
             for index, chunk in enumerate(self.chunks)
         ]
+        # Filter matching chunks with score > 0 before slicing top k
+        scored_chunks = [item for item in scored_chunks if item[0] > 0]
         scored_chunks.sort(key=lambda item: (-item[0], item[1]))
-        selected = [chunk for score, _, chunk in scored_chunks[: self.k] if score > 0]
+
+        selected = [chunk for _, _, chunk in scored_chunks[: self.k]]
         return selected or self.chunks[: self.k]
 
 
@@ -263,12 +266,13 @@ class AgenticChunkSplitter:
                             len(current_chunk) + len(cand_sentence)
                             > self.max_chunk_size
                         ):
-                            chunked_docs.append(
-                                Document(
-                                    page_content=current_chunk,
-                                    metadata=dict(doc.metadata),
+                            if current_chunk:
+                                chunked_docs.append(
+                                    Document(
+                                        page_content=current_chunk,
+                                        metadata=dict(doc.metadata),
+                                    )
                                 )
-                            )
                             current_chunk = cand_sentence
                             split_occurred = True
                             idx += b_idx + 1
@@ -405,7 +409,7 @@ class RAGBenchmarkEngine:
                 model=target_model,
                 base_url=OLLAMA_BASE_URL,
                 temperature=0.0,
-                num_predict=160,
+                num_predict=1024,  # Increased token limit to allow LLM/RAGAS evaluations to complete without truncation
             )
 
     def get_embedding_model(self, model_name: str | None = None):
@@ -761,7 +765,7 @@ class RAGBenchmarkEngine:
         llm_instance = self.get_llm(llm_model) if self.answer_mode == "llm" else None
 
         answer_start = time.perf_counter()
-        worker_count = 1  # Fixed to 1 to restrict peak RAM on 512MB instances
+        worker_count = EVALUATION_ANSWER_WORKERS
         if worker_count == 1:
             answer_context_pairs = [
                 self._answer_question(retriever, llm_instance, q) for q in questions
@@ -806,13 +810,18 @@ class RAGBenchmarkEngine:
             if embed_fn is None:
                 embed_fn = self.get_embedding_model(embed_model)
 
+            # Map fields for Ragas 0.2+ backward & forward compatibility
             dataset = Dataset.from_dict(
                 {
                     "question": questions,
+                    "user_input": questions,
                     "answer": answers,
+                    "response": answers,
                     "contexts": contexts,
+                    "retrieved_contexts": contexts,
                     "ground_truth": ground_truth_single,
                     "ground_truths": ground_truths_list,
+                    "reference": ground_truth_single,
                 }
             )
 
@@ -820,7 +829,7 @@ class RAGBenchmarkEngine:
             evaluator_embeddings = LangchainEmbeddingsWrapper(embed_fn)
 
             run_config = RunConfig(
-                max_workers=1,  # Force single thread for RAGAS evaluation to prevent memory spikes
+                max_workers=EVALUATION_RAGAS_WORKERS,
                 timeout=EVALUATION_RAGAS_TIMEOUT,
                 max_retries=EVALUATION_RAGAS_RETRIES,
                 max_wait=10,
@@ -846,7 +855,7 @@ class RAGBenchmarkEngine:
                 llm=llm_model,
                 questions=len(questions),
                 metrics=4,
-                workers=1,
+                workers=EVALUATION_RAGAS_WORKERS,
                 ragas_ms=metric_ms,
                 total_ms=total_ms,
             )
