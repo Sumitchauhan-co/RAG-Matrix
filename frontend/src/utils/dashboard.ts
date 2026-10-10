@@ -11,6 +11,7 @@ export const getTopConfig = (data: PipelineResult[]): PipelineResult | null => {
 
 	return (
 		[...data].sort((a, b) => {
+			// Primary Score: Triad of RAG Context Quality
 			const scoreA =
 				((a?.metrics?.context_recall ?? 0) +
 					(a?.metrics?.faithfulness ?? 0) +
@@ -27,6 +28,7 @@ export const getTopConfig = (data: PipelineResult[]): PipelineResult | null => {
 				return scoreB - scoreA;
 			}
 
+			// Tiebreaker 1: Faithfulness (Groundedness)
 			const faithA = a?.metrics?.faithfulness ?? 0;
 			const faithB = b?.metrics?.faithfulness ?? 0;
 
@@ -34,7 +36,15 @@ export const getTopConfig = (data: PipelineResult[]): PipelineResult | null => {
 				return faithB - faithA;
 			}
 
-			// Default missing latency to Infinity so valid latencies take priority
+			// Tiebreaker 2: Answer Relevancy
+			const relA = a?.metrics?.answer_relevancy ?? 0;
+			const relB = b?.metrics?.answer_relevancy ?? 0;
+
+			if (relB !== relA) {
+				return relB - relA;
+			}
+
+			// Tiebreaker 3: Lowest Latency
 			const latencyA = a?.latency_ms ?? Infinity;
 			const latencyB = b?.latency_ms ?? Infinity;
 
