@@ -100,6 +100,20 @@ Apply the changes to your PostgreSQL database instance:
 uv run python -m alembic upgrade head
 ```
 
+For the deployed PWA/TWA platform change, the database must include revision
+`f31b8d2a6c40` before the app sends device registrations with platform `APP`.
+If that revision is already behind the database's current revision but the
+`APP` enum value is still missing, run the latest migration from the backend
+directory in the Render Shell (using the Render service's configured
+`DATABASE_URL`):
+
+```bash
+uv run python -m alembic upgrade head
+```
+
+Revision `7cfaaec982ad` safely adds `APP` to PostgreSQL's `deviceplatform` enum
+if it is missing. Restart or redeploy the backend after the migration completes.
+
 #### 4. Rollback Migration (If Needed)
 
 To undo the last applied migration and revert the database schema state:
