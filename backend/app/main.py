@@ -14,7 +14,7 @@ if __package__ in {None, ""}:
         sys.path.insert(0, str(project_root))
 
 from app.common.db.database import engine, init_db
-from app.common.utils import APP_ENV, APP_URL, APP_URLS
+from app.common.utils import APP_ENV, APP_URLS
 from app.common.utils.api_router import api_v1_router
 from app.module.auth.model import User
 
@@ -41,13 +41,13 @@ async def lifespan(app: FastAPI):
     print("🛑 Application shutting down...")
 
 
-app = FastAPI(
+fastapi_app = FastAPI(
     title="RAG Pipeline Evaluation API",
     version="1.0.0",
     lifespan=lifespan,
 )
 
-admin = Admin(app, engine, title="RAG Benchmark Studio")
+admin = Admin(fastapi_app, engine, title="RAG Benchmark Studio")
 admin.add_view(UserAdmin)
 
 default_origins = [
@@ -58,24 +58,24 @@ default_origins = [
 ]
 
 parsed_origins = [origin for origin in APP_URLS if origin and origin != "*"]
-allowed_origins = list(set(parsed_origins + default_origins))
+allowed_origins = list(dict.fromkeys(parsed_origins + default_origins))
 
-allow_creds = True if (APP_URL != "*" or len(allowed_origins) > 0) else False
-
-app.add_middleware(
-    CORSMiddleware,
+# Keep CORS outside FastAPI's error middleware so unhandled 500 responses also
+# include CORS headers and the browser can report the real server error.
+app = CORSMiddleware(
+    fastapi_app,
     allow_origins=allowed_origins,
     allow_origin_regex=r"https://.*\.vercel\.app|https://.*\.ngrok(-free)?\.dev|https://.*\.ngrok\.io|http://localhost:\d+|http://127.0.0.1:\d+",
-    allow_credentials=allow_creds,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
 
-app.include_router(api_v1_router, prefix="/api/v1")
+fastapi_app.include_router(api_v1_router, prefix="/api/v1")
 
 
-@app.get("/health")
+@fastapi_app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "RAG Benchmark API"}
 
