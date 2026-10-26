@@ -14,6 +14,7 @@ class NotificationType(str, Enum):
 
 class DevicePlatform(str, Enum):
     WEB = "web"
+    APP = "app"
     ANDROID = "android"
 
 
@@ -131,6 +132,19 @@ class DeviceRegister(SQLModel):
     )
 
     platform: DevicePlatform
+
+    firebase_project_id: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=200,
+    )
+
+
+class DeviceUnregister(SQLModel):
+    token: str = Field(
+        min_length=1,
+        max_length=4096,
+    )
 
 
 class NotificationRead(SQLModel):

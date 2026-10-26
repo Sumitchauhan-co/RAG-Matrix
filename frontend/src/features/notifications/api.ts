@@ -38,15 +38,22 @@ export async function markAllNotificationsAsRead(): Promise<{
 
 export async function registerNotificationDevice(
 	token: string,
-	platform: DevicePlatform = 'web',
+	platform: DevicePlatform,
 ): Promise<NotificationDevice> {
 	const response = await api.post<NotificationDevice>(
 		'/notifications/devices',
 		{
 			token,
 			platform,
+			firebase_project_id: import.meta.env.VITE_FIREBASE_PROJECT_ID,
 		},
 	);
 
 	return response.data;
+}
+
+export async function unregisterNotificationDevice(token: string): Promise<void> {
+	await api.delete('/notifications/devices/current', {
+		data: { token },
+	});
 }

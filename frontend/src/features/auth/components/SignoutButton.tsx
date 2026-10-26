@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import useAuthStore from '@/store/store';
+import { unregisterWebPush } from '@/features/notifications/firebase';
+import { toast } from '@/components/ui/toast';
 
 export const SignOutButton: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(false);
@@ -11,10 +13,32 @@ export const SignOutButton: React.FC = () => {
 	const handleSignOut = async () => {
 		setIsLoading(true);
 		try {
+			try {
+				await unregisterWebPush();
+			} catch (error) {
+				console.error('Failed to unregister push notifications before sign out:', error);
+				toast.add({
+					title: 'Push notifications may still be enabled',
+					description:
+						'This device could not be disconnected from push notifications. You can retry from the notification menu.',
+					type: 'warning',
+					timeout: 7000,
+				});
+			}
+
 			await signout();
 			navigate('/signin');
 		} catch (error) {
 			console.error('Failed to sign out:', error);
+			toast.add({
+				title: 'Could not sign out',
+				description:
+					error instanceof Error
+						? error.message
+						: 'Please try again.',
+				type: 'error',
+				timeout: 6000,
+			});
 		} finally {
 			setIsLoading(false);
 		}

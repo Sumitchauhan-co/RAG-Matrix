@@ -2,17 +2,22 @@ import { Bell } from 'lucide-react';
 
 interface NotificationBellProps {
 	unreadCount: number;
+	expanded: boolean;
 	onClick: () => void;
 }
 
 export function NotificationBell({
 	unreadCount,
+	expanded,
 	onClick,
 }: NotificationBellProps) {
 	return (
 		<button
 			type="button"
 			onClick={onClick}
+			aria-expanded={expanded}
+			aria-controls="notification-panel"
+			aria-haspopup="dialog"
 			className="relative inline-flex size-9 items-center justify-center rounded-full transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 			aria-label={
 				unreadCount > 0

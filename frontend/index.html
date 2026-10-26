@@ -80,16 +80,6 @@
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 
-  <!-- PWA Service Worker Registration -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/pwabuilder-sw.js')
-          .then(reg => console.log('Service Worker registered successfully:', reg.scope))
-          .catch(err => console.error('Service Worker registration failed:', err));
-      });
-    }
-  </script>
 </body>
 
 </html>

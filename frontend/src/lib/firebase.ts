@@ -13,6 +13,16 @@ const firebaseConfig = {
 export const firebaseApp = initializeApp(firebaseConfig);
 
 export async function getFirebaseMessaging() {
+	const requiredConfig = [
+		firebaseConfig.apiKey,
+		firebaseConfig.projectId,
+		firebaseConfig.messagingSenderId,
+		firebaseConfig.appId,
+	];
+	if (requiredConfig.some((value) => !value)) {
+		throw new Error('Firebase Messaging configuration is incomplete.');
+	}
+
 	const supported = await isSupported();
 
 	if (!supported) {

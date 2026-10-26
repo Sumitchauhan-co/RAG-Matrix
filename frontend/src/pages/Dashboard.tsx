@@ -31,7 +31,6 @@ import { BenchmarkChart } from '@/features/dashboard/components/BenchmarkChart';
 
 import { MatrixTable } from '@/features/dashboard/components/MatrixTable';
 
-import { usePushNotifications } from '@/features/notifications/hooks/usePushNotification';
 
 type DashboardState = {
 	results?: PipelineResult[] | PipelineResult;
@@ -66,9 +65,6 @@ export default function Dashboard() {
 	const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
 	const fetchBalance = useAuthStore((state) => state.fetchBalance);
-
-	// Register the current browser for Firebase push notifications.
-	usePushNotifications();
 
 	// Normalize router state results.
 	// These are only used as fallback/initial data.

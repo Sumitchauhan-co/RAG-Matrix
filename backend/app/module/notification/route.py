@@ -2,15 +2,18 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from app.common.db.database import get_session
+from app.common.utils.config import FIREBASE_PROJECT_ID
 from app.module.auth.model import User
 from app.module.auth.route import get_current_user
 
 from app.module.notification.model import (
     DeviceRegister,
+    DeviceUnregister,
     NotificationDeviceRead,
     NotificationRead,
 )
 
+from app.module.notification.provider import initialize_firebase
 from app.module.notification.service import (
     NotificationService,
 )
@@ -88,8 +91,47 @@ def register_device(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    if not FIREBASE_PROJECT_ID:
+        raise HTTPException(
+            status_code=503,
+            detail="Push notifications are not configured on the server.",
+        )
+
+    if (
+        data.firebase_project_id
+        and data.firebase_project_id != FIREBASE_PROJECT_ID
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="The device Firebase project does not match the server.",
+        )
+
+    try:
+        initialize_firebase()
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Push notifications are not configured correctly on the server.",
+        ) from exc
+
     return NotificationService.register_device(
         session=session,
         user_id=current_user.id,
         data=data,
     )
+
+
+@router.delete(
+    "/devices/current",
+)
+def unregister_device(
+    data: DeviceUnregister,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    deactivated = NotificationService.deactivate_device(
+        session=session,
+        user_id=current_user.id,
+        token=data.token,
+    )
+    return {"deactivated": deactivated}

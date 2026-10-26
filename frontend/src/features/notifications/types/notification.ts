@@ -1,6 +1,6 @@
 export type NotificationType = 'info' | 'success' | 'warning' | 'error';
 
-export type DevicePlatform = 'web' | 'android';
+export type DevicePlatform = 'web' | 'app' | 'android';
 
 export interface Notification {
 	id: number;

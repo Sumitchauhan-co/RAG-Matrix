@@ -67,6 +67,11 @@ RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET")
 # Firebase Cloud Messaging Settings
 # ============================================================
 
+FIREBASE_PROJECT_ID = os.getenv(
+    "FIREBASE_PROJECT_ID",
+    "",
+)
+
 # Firebase Admin SDK service-account JSON.
 FIREBASE_SERVICE_ACCOUNT = os.getenv(
     "FIREBASE_SERVICE_ACCOUNT",

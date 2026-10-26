@@ -79,6 +79,28 @@ class NotificationService:
 
         return device
 
+    @staticmethod
+    def deactivate_device(
+        session: Session,
+        user_id: int,
+        token: str,
+    ) -> bool:
+        device = session.exec(
+            select(NotificationDevice).where(
+                NotificationDevice.user_id == user_id,
+                NotificationDevice.token == token,
+                NotificationDevice.is_active,
+            )
+        ).first()
+
+        if device is None:
+            return False
+
+        device.is_active = False
+        session.add(device)
+        session.commit()
+        return True
+
     # ------------------------------------------------------------------
     # Create notification
     # ------------------------------------------------------------------
@@ -191,10 +213,17 @@ class NotificationService:
         error: Exception,
     ) -> bool:
 
+        if type(error).__name__ in {
+            "UnregisteredError",
+            "InvalidRegistrationError",
+        }:
+            return True
+
         error_message = str(error).lower()
 
         invalid_token_errors = (
             "unregistered",
+            "notregistered",
             "registration-token-not-registered",
             "invalid registration token",
             "not a valid fcm registration token",

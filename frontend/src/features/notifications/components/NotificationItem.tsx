@@ -28,8 +28,10 @@ export function NotificationItem({
 					onRead(notification.id);
 				}
 			}}
-			className={`w-full border-b p-4 text-left transition-colors last:border-b-0 hover:bg-muted/50 ${
-				!notification.is_read ? 'bg-muted/30' : 'bg-background'
+			className={`w-full border-b border-slate-200 p-4 text-left transition-colors last:border-b-0 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800 ${
+				!notification.is_read
+					? 'bg-indigo-50 dark:bg-indigo-950/40'
+					: 'bg-white dark:bg-slate-900'
 			}`}
 		>
 			<div className="flex items-start gap-3">

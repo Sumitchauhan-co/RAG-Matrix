@@ -1,10 +1,43 @@
 import path from 'path';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
+function firebaseMessagingConfigPlugin(): Plugin {
+	let configSource = 'self.RAG_FIREBASE_CONFIG = {};';
+
+	return {
+		name: 'firebase-messaging-config',
+		configResolved(config) {
+			const env = loadEnv(config.mode, config.envDir, 'VITE_');
+			const firebaseConfig = {
+				apiKey: env.VITE_FIREBASE_API_KEY,
+				authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+				projectId: env.VITE_FIREBASE_PROJECT_ID,
+				storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+				messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+				appId: env.VITE_FIREBASE_APP_ID,
+			};
+			configSource = `self.RAG_FIREBASE_CONFIG = ${JSON.stringify(firebaseConfig)};`;
+		},
+		configureServer(server) {
+			server.middlewares.use('/firebase-messaging-config.js', (_req, res) => {
+				res.setHeader('Content-Type', 'application/javascript');
+				res.end(configSource);
+			});
+		},
+		generateBundle() {
+			this.emitFile({
+				type: 'asset',
+				fileName: 'firebase-messaging-config.js',
+				source: configSource,
+			});
+		},
+	};
+}
+
 export default defineConfig({
-	plugins: [react(), tailwindcss()],
+	plugins: [react(), tailwindcss(), firebaseMessagingConfigPlugin()],
 	resolve: {
 		alias: {
 			'@': path.resolve(import.meta.dirname, './src'),

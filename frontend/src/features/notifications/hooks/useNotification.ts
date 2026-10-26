@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
 	getNotifications,
@@ -8,75 +9,72 @@ import {
 import type { Notification } from '../types/notification';
 
 export function useNotifications() {
-	const [notifications, setNotifications] = useState<Notification[]>([]);
-
-	const [loading, setLoading] = useState(true);
-
-	const [error, setError] = useState<string | null>(null);
+	const queryClient = useQueryClient();
+	const [actionError, setActionError] = useState<string | null>(null);
+	const query = useQuery({
+		queryKey: ['notifications'],
+		queryFn: () => getNotifications(),
+		refetchInterval: 60_000,
+		refetchOnWindowFocus: true,
+	});
+	const notifications = query.data ?? [];
 
 	const unreadCount = notifications.filter(
 		(notification) => !notification.is_read,
 	).length;
 
-	const fetchNotifications = useCallback(async () => {
-		try {
-			setError(null);
+	const error =
+		actionError ?? (query.error ? 'Failed to load notifications.' : null);
 
-			const data = await getNotifications();
+	const markAsRead = useCallback(
+		async (id: number) => {
+			setActionError(null);
+			try {
+				const updated = await markNotificationAsRead(id);
 
-			setNotifications(data);
-		} catch (error) {
-			console.error('Failed to fetch notifications:', error);
+				queryClient.setQueryData<Notification[]>(
+					['notifications'],
+					(current) =>
+						(current ?? []).map((notification) =>
+							notification.id === id ? updated : notification,
+						),
+				);
+			} catch (error) {
+				console.error('Failed to mark notification as read:', error);
+				setActionError('Failed to mark notification as read.');
+			}
+		},
+		[queryClient],
+	);
 
-			setError('Failed to load notifications.');
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+	const markAllAsRead = useCallback(
+		async () => {
+			setActionError(null);
+			try {
+				await markAllNotificationsAsRead();
 
-	const markAsRead = useCallback(async (id: number) => {
-		try {
-			const updated = await markNotificationAsRead(id);
-
-			setNotifications((current) =>
-				current.map((notification) =>
-					notification.id === id ? updated : notification,
-				),
-			);
-		} catch (error) {
-			console.error('Failed to mark notification as read:', error);
-		}
-	}, []);
-
-	const markAllAsRead = useCallback(async () => {
-		try {
-			await markAllNotificationsAsRead();
-
-			setNotifications((current) =>
-				current.map((notification) => ({
-					...notification,
-					is_read: true,
-				})),
-			);
-		} catch (error) {
-			console.error('Failed to mark notifications as read:', error);
-		}
-	}, []);
-
-	useEffect(() => {
-		fetchNotifications();
-
-		const interval = window.setInterval(fetchNotifications, 60_000);
-
-		return () => window.clearInterval(interval);
-	}, [fetchNotifications]);
+				queryClient.setQueryData<Notification[]>(
+					['notifications'],
+					(current) =>
+						(current ?? []).map((notification) => ({
+							...notification,
+							is_read: true,
+						})),
+				);
+			} catch (error) {
+				console.error('Failed to mark notifications as read:', error);
+				setActionError('Failed to mark notifications as read.');
+			}
+		},
+		[queryClient],
+	);
 
 	return {
 		notifications,
 		unreadCount,
-		loading,
+		loading: query.isPending,
 		error,
-		refetch: fetchNotifications,
+		refetch: query.refetch,
 		markAsRead,
 		markAllAsRead,
 	};

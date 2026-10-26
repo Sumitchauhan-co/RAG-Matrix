@@ -11,6 +11,7 @@ from app.module.auth.model import User
 from app.module.billing.model import CreditTransaction, PaymentOrder, UserCredit
 from app.module.contact.model import ContactMessage
 from app.module.evaluation.model import EvaluationResultItem, EvaluationRun
+from app.module.notification.model import Notification, NotificationDevice
 
 # Alembic Config object
 config = context.config

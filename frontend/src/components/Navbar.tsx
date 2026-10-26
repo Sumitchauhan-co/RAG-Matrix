@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/popover';
 import { formatMemberSinceDate } from '../utils/date';
 import { SignOutButton } from '@/features/auth/components/SignoutButton';
+import { NotificationCenter } from '@/features/notifications/components/NotificationCenter';
 
 const navItems = [
 	{ name: 'Home', path: '/', icon: Home },
@@ -175,6 +176,7 @@ export const Navbar: React.FC = () => {
 								Sign In
 							</Button>
 						)}
+						{isAuthenticated && <NotificationCenter />}
 					</div>
 
 					{/* Mobile Right Controls */}
@@ -192,6 +194,7 @@ export const Navbar: React.FC = () => {
 								<Menu className="h-5 w-5" />
 							)}
 						</button>
+						{isAuthenticated && <NotificationCenter />}
 					</div>
 				</nav>
 
